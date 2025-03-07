@@ -1,4 +1,4 @@
-name: Unit Tests
+name: Unit Tests Just Torch
 env:
   # increment this when downloads substantially change to avoid the internet
   DOWNLOAD_CACHE_VERSION: '9'

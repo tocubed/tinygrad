@@ -1,0 +1,71 @@
+name: Unit Tests
+env:
+  # increment this when downloads substantially change to avoid the internet
+  DOWNLOAD_CACHE_VERSION: '9'
+  CAPTURE_PROCESS_REPLAY: 1
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  torchbackend:
+    name: Torch Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    - name: Setup Environment
+      uses: ./.github/actions/setup-tinygrad
+      with:
+        key: torch-backend-pillow-torchvision-et-pt
+        deps: testing_minimal
+        pydeps: "pillow torchvision expecttest"
+        llvm: 'true'
+    - name: Install ninja
+      run: |
+        sudo apt update || true
+        sudo apt install -y --no-install-recommends ninja-build
+    - name: Lint with ruff
+      run: |
+        pip3 install --upgrade --force-reinstall ruff
+        python3 -m ruff check extra/torch_backend/backend.py
+    - name: Test one op
+      run: PYTHONPATH=. FORWARD_ONLY=1 TINY_BACKEND=1 python3 test/test_ops.py TestOps.test_add
+    - name: Test ResNet-18
+      run: PYTHONPATH=. DEBUG=2 python3 extra/torch_backend/example.py
+    - name: My (custom) tests
+      run: PYTHONPATH=. python3 extra/torch_backend/test.py
+    - name: Test one op in torch tests
+      run: PYTHONPATH=. DEBUG=2 python3 extra/torch_backend/torch_tests.py TestTinyBackendPRIVATEUSE1.test_unary_log_tiny_float32
+    - name: Test Ops with TINY_BACKEND (expect failure)
+      run: PYTHONPATH=. LLVM=1 LLVMOPT=0 TINY_BACKEND=1 python3 -m pytest -s -vv -o log_cli=True -n auto test/test_ops.py || true
+    - name: Test in-place operations on views
+      run: PYTHONPATH=. TORCH_DEBUG=1 python3 extra/torch_backend/test_inplace.py
+
+  torchbackendmore:
+    name: Torch Backend Tests More
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    - name: Setup Environment
+      uses: ./.github/actions/setup-tinygrad
+      with:
+        key: torch-backend-pillow-torchvision-et-pt
+        deps: testing_minimal
+        llvm: 'true'
+    - name: Install ninja
+      run: |
+        sudo apt update || true
+        sudo apt install -y --no-install-recommends ninja-build
+    - name: Test beautiful_mnist in torch with TINY_BACKEND
+      run: PYTHONPATH=. LLVM=1 TARGET_EVAL_ACC_PCT=96.0 TINY_BACKEND=1 python3 examples/other_mnist/beautiful_mnist_torch.py
+    - name: Test some torch tests (expect failure)
+      run: PYTHONPATH=. python3 -m pytest extra/torch_backend/torch_tests.py -v --tb=no || true

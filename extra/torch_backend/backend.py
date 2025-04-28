@@ -676,4 +676,4 @@ torch.distributed.Backend.register_backend("tiny", create_pg_tiny, devices="tiny
 
 import torch.distributed.distributed_c10d as dc
 print("ProcessGroup init doc:\n", dc.ProcessGroup.__init__.__doc__)
-print("Torch Git hash:", torch.version.git_version) 
+print("Torch Git hash:", torch.version.git_version)

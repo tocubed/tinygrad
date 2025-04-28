@@ -673,3 +673,6 @@ class ProcessGroupTiny(torch.distributed.ProcessGroup):
 
 def create_pg_tiny(store, rank, size, timeout): return ProcessGroupTiny(store, rank, size)
 torch.distributed.Backend.register_backend("tiny", create_pg_tiny, devices="tiny")
+
+import torch.distributed.distributed_c10d as dc
+print("ProcessGroup init doc:\n", dc.ProcessGroup.__init__.__doc__)
